@@ -2,17 +2,38 @@
 import { nextTick, ref } from 'vue'
 import type { Content } from './utils/type'
 
-const contents = ref<Content[]>([{ id: 0, text: '' }])
+const title = ref<string>('')
+const contents = ref<Content[]>([])
 const contentRefs = ref<HTMLElement[]>([])
+
+const handleTitleKeyDown = async (event: KeyboardEvent) => {
+  if (event.key === 'Enter') {
+    if (!event.isComposing) {
+      contents.value.splice(0, 0, { id: 0, text: '' })
+      contents.value.forEach((content, index) => {
+        content.id = index
+      })
+      await nextTick()
+      setTimeout(() => {
+        contentRefs.value[0]?.focus()
+      }, 10)
+    }
+  }
+}
 
 const handleKeyDown = async (event: KeyboardEvent, index: number) => {
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
 
     if (!event.isComposing) {
-      contents.value.splice(index + 1, 0, { id: index + 1, text: '' })
+      contents.value.splice(index + 1, 0, { id: 0, text: '' })
+      contents.value.forEach((content, index) => {
+        content.id = index
+      })
       await nextTick()
-      contentRefs.value[index + 1]?.focus()
+      setTimeout(() => {
+        contentRefs.value[index + 1]?.focus()
+      }, 10)
     }
   }
 }
@@ -24,11 +45,20 @@ const handleKeyDown = async (event: KeyboardEvent, index: number) => {
   </div>
   <div class="flex justify-center m-3">
     <div class="w-1/2">
+      <h1
+        contenteditable="true"
+        @keydown.enter="(e) => handleTitleKeyDown(e)"
+        @input="(e) => (title = (e.target as HTMLElement).innerText)"
+        placeholder="新規ページ"
+        class="w-full border text-6xl"
+      >
+        {{ title }}
+      </h1>
       <p
         v-for="(content, index) in contents"
-        :key="index"
+        v-bind:key="content.id"
         contenteditable="true"
-        @keydown="(e) => handleKeyDown(e, index)"
+        @keydown.enter="(e) => handleKeyDown(e, index)"
         @input="(e) => (content.text = (e.target as HTMLElement).innerText)"
         v-bind:ref="
           (el) => {
@@ -36,7 +66,7 @@ const handleKeyDown = async (event: KeyboardEvent, index: number) => {
           }
         "
         placeholder="テキストを入力..."
-        class="w-full rounded mb-2 focus:outline-none"
+        class="w-full mb-2 border"
       >
         {{ content.text }}
       </p>
